@@ -1,7 +1,10 @@
 
 import java.awt.Color;
 import java.awt.Graphics;
-import static java.lang.Math.sqrt;
+import java.awt.Image;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 
 /**
  *
@@ -9,31 +12,27 @@ import static java.lang.Math.sqrt;
  */
 public class Checker {
 
-    private static int FIELDSIZE;
-    private final static int CHECKERSIZE = (int) (0.8 * Board.getFieldSize());
-    public int x;
-    public int y;
-    public int i;
-    public int j;
-    private CheckerType checkertype;
-
+    public static int FIELDSIZE = Board.FIELDSIZE;
+    public static int CHECKERSIZE = (int) (0.8 * Board.FIELDSIZE);
+    public int i;           //rząd
+    public int j;           //kolumna
+    public int x;           //współrzędne x
+    public int y;           //współrzędne y
+    private final CheckerType checkertype;
+    public boolean isKing;  //czy damka?
+    
+    public CheckerType getCheckertype() {
+        return checkertype;
+    }
+    
     public Checker(int i, int j, CheckerType ctype) {
-        FIELDSIZE = Board.getFieldSize();
         this.i = i;
         this.j = j;
-        x = (j-1) * FIELDSIZE + FIELDSIZE/2;
-        y = (i-1) * FIELDSIZE + FIELDSIZE/2;
+        x = (j - 1) * FIELDSIZE + FIELDSIZE / 2;
+        y = (i - 1) * FIELDSIZE + FIELDSIZE / 2;
         checkertype = ctype;
     }
 
-    /*public int getPosition_x() {
-        return (j-1) * FIELDSIZE + FIELDSIZE/2;
-    }
-    
-    public int getPosition_y() {
-        return (i-1) * FIELDSIZE + FIELDSIZE/2;
-    }*/
-    
     public void draw(Graphics g) {
         if (checkertype == CheckerType.BLACK) {
             g.setColor(Color.BLACK);
@@ -44,15 +43,33 @@ public class Checker {
         if (checkertype == CheckerType.WHITE) {
             g.setColor(Color.WHITE);
         }
+
         g.fillOval(x - CHECKERSIZE / 2, y - CHECKERSIZE / 2, CHECKERSIZE, CHECKERSIZE);
-        
-        
+        if (isKing == true) {
+            try {
+                File pathToFile = null;
+                if (checkertype == CheckerType.BLACK)
+                    pathToFile = new File("black.jpeg");
+                else if (checkertype == CheckerType.RED)    
+                    pathToFile = new File("red.jpeg");
+                else if (checkertype == CheckerType.WHITE)
+                    pathToFile = new File ("white.jpg");
+                Image image = ImageIO.read(pathToFile);
+                g.drawImage(image, x - CHECKERSIZE / 4, y - CHECKERSIZE / 4, CHECKERSIZE / 2, CHECKERSIZE / 2, null);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
-    boolean contains(int x, int y) {
-        /*int pos_x = getPosition_x();
-        int pos_y = getPosition_y();*/
-        double distance = sqrt((this.x - x) * (this.x - x) + (this.y - y) * (this.y - y));
-        return distance < CHECKERSIZE / 2;
+    boolean contains(int x, int y) {        //sprawdza czy punkt (x, y) należy do piona
+        int distance = (this.x - x) * (this.x - x) + (this.y - y) * (this.y - y);        
+        return distance < CHECKERSIZE * CHECKERSIZE / 4;                
     }
+    
+    public void adjust(){
+        x = (j - 1) * FIELDSIZE + FIELDSIZE / 2;
+        y = (i - 1) * FIELDSIZE + FIELDSIZE / 2;
+    }
+
 }
