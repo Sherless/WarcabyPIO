@@ -154,7 +154,9 @@ public class AIGame extends Game {
             Collections.shuffle(moves);
             Move.sort(moves, this);
             int o = 0;
-            makeMove(moves.get(o));
+            moves.get(o).checker.i = moves.get(o).i;
+            moves.get(o).checker.j = moves.get(o).j;
+            remChecker(moves.get(o).removed);
             if (prevMove == null) {
                 prevMove = moves.get(o);
             } else {
