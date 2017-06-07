@@ -1,3 +1,4 @@
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Dimension;
@@ -6,6 +7,7 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseMotionAdapter;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -13,17 +15,16 @@ import java.awt.event.MouseMotionAdapter;
  */
 public class Board extends javax.swing.JComponent {
 
-    public static int FIELDSIZE = 67;
+    public static int FIELDSIZE = CheckersGUI.MEDIUM;
     public static int BOARDSIZE = 8 * FIELDSIZE;
     private Dimension dimPrefSize;
     private CheckerType whoseTurn;
     private boolean inDrag = false;
     private Checker dragged;        //przenoszony pion
-    private Checker prevCapturing;  //pion, którym wykonano bicie i jest konieczność wykonanie kolejnego bicia
     private int prev_x, prev_y;     //współrzędne piona przed przenoszeniem
     private int dx, dy;             //różnica współrzędnych miejsca kliknięcia myszą i środka klikniętego piona
     private CheckersGUI cgui;
-    private Game game;
+    public Game game;
 
     public Board(CheckersGUI cgui, Game game) {
         this.cgui = cgui;
@@ -48,7 +49,9 @@ public class Board extends javax.swing.JComponent {
                         }
                     }
                 } else {
-                    new WindowFrame(cgui).setVisible(true);     //wyświetl okno ustawień
+                    WindowFrame wf = new WindowFrame(cgui);     //wyświetl okno ustawień
+                    wf.setVisible(true);
+                    cgui.setWf(wf);
                     removeMouseListener(this);
                 }
             }
@@ -66,9 +69,10 @@ public class Board extends javax.swing.JComponent {
                         + FIELDSIZE / 2;
                 dragged.y = (y - dy) / FIELDSIZE * FIELDSIZE
                         + FIELDSIZE / 2;
-                Checker r;
-                if (game.isAnyCapturePossible(dragged.getCheckertype()) == false) {                  //jeżeli drużyna nie ma szans na bicie
+                Move m;
+                if (!game.isAnyCapturePossible(dragged.getCheckertype())) {                  //jeżeli drużyna nie ma szans na bicie
                     if (game.isMovePossible(dragged, whichRow(dragged.y), whichColumn(dragged.x))) { //rozpatrz czy dany ruch jest możliwy
+                        game.prevMove = new Move(dragged, whichRow(dragged.y), whichColumn(dragged.x));
                         dragged.i = whichRow(dragged.y);                                        //przesunięcie piona
                         dragged.j = whichColumn(dragged.x);
                         if ((dragged.getCheckertype() == game.team1 && dragged.i == 8)
@@ -78,36 +82,38 @@ public class Board extends javax.swing.JComponent {
                         whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
                         game.isAnyMovePossible(whoseTurn);  //sprawdź czy drużyna ma możliwość jakiekolwiek ruchu
                     } else {
-                        if (CheckersGUI.sound) {
-                            Toolkit.getDefaultToolkit().beep();
+                        if (CheckersGUI.sound && (whichRow(dragged.y) != dragged.i || whichColumn(dragged.x) != dragged.j)) {
+                            Toolkit.getDefaultToolkit().beep();             
                         }
                         dragged.x = prev_x;
                         dragged.y = prev_y;
                     }
-                } else if ((r = game.isCapturePossible(dragged, whichRow(dragged.y), whichColumn(dragged.x))) != null
-                        && (prevCapturing == null || prevCapturing == dragged)) { //   skoro drużyna w danym ruchu ma możliwe bicie
+                } else if ((m = game.isCapturePossible(dragged, whichRow(dragged.y), whichColumn(dragged.x))) != null) { //   skoro drużyna w danym ruchu ma możliwe bicie
                     dragged.i = whichRow(dragged.y);                              //   to sprawdź czy dany ruch jest biciem
                     dragged.j = whichColumn(dragged.x);                           //   bicie jest możliwe, gdy dane bicie jest pierwszym w turze tej drużyny
-                    game.remChecker(r);        //usuń zbitego piona                    bądź jest to kolejne bicie przez piona prevCapturing
-                    if (game.isCapturesPossible(dragged) == false) {                   //sprawdź czy jest konieczność dalszego bicia przez piona dragged
-                        if ((dragged.getCheckertype() == game.team1 && dragged.i == 8) 
+                    game.remChecker(m.removed);        //usuń zbitego piona                    bądź jest to kolejne bicie przez piona prevMove
+                    if (game.prevMove == null || game.prevMove.checker.getCheckertype() != whoseTurn) {  //nie jest zapmiętany
+                        game.prevMove = m;                          //żaden ruch bądź ostatnim zapamiętanym ruchem jest 
+                    } else {                                        //ruch przeciwnika, więc można o nim "zapomnieć"
+                        m.prev = game.prevMove;         //jest to któreś z kolei bicie
+                        game.prevMove = m;          //więc poprzednie trzeba zapisać do prevMove.prev
+                    }                               //i zapamiętać aktualne w prevMove
+                    if (!game.isCapturesPossible(dragged)) {                   //sprawdź czy jest konieczność dalszego bicia przez piona dragged
+                        if ((dragged.getCheckertype() == game.team1 && dragged.i == 8)
                          || (dragged.getCheckertype() == game.team2 && dragged.i == 1)) {
                             dragged.isKing = true;
                         }
                         whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
-                        prevCapturing = null;
                         game.isAnyMovePossible(whoseTurn);  //sprawdź czy drużyna ma możliwość jakiekolwiek ruchu
-                    } else {
-                        prevCapturing = dragged;            //ostatnio bicie było wykonywane przez piona dragged
                     }
                 } else {
-                    if (CheckersGUI.sound) {
+                    if (CheckersGUI.sound && (whichRow(dragged.y) != dragged.i || whichColumn(dragged.x) != dragged.j)) {
                         Toolkit.getDefaultToolkit().beep();
                     }
                     dragged.x = prev_x;             //ani dane bicie ani ruch
                     dragged.y = prev_y;             //jest niemożliwe
                 }                                   //pion wraca na poprzednią pozycję
-                dragged = null;         
+                dragged = null;
                 repaint();
             }
         });
@@ -133,6 +139,29 @@ public class Board extends javax.swing.JComponent {
         Font f = new Font("serif", Font.BOLD, FIELDSIZE / 2);
         g.setFont(f);
         paintCheckersBoard(g);
+        if (game instanceof AIGame && whoseTurn == game.team1) {
+            repaint();
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    if (whoseTurn == game.team1) {
+                        if ((game.isAnyCapturePossible(whoseTurn))) {
+                            ((AIGame) game).makeCapture(whoseTurn);
+                            if (!game.isCapturesPossible(game.prevMove.checker)) {
+                                if (game.prevMove.i == 8) {
+                                    game.prevMove.checker.isKing = true;    //jeżeli przesunięto na przeciwległy
+                                }
+                                whoseTurn = game.team2;
+                                game.isAnyMovePossible(whoseTurn);
+                            }
+                        } else {
+                            ((AIGame) game).makeMove(whoseTurn, Board.this);
+                            whoseTurn = game.team2;
+                            game.isAnyMovePossible(whoseTurn);
+                        }
+                    }
+                }
+            });
+        }
         for (int i = 0; i < game.n; i++) {
             if (game.checkers[i] != dragged) {
                 game.checkers[i].draw(g);
@@ -145,12 +174,12 @@ public class Board extends javax.swing.JComponent {
         String str;
         if (game.inGame) {
             str = whoseTurn + "'s turn";
-            
+
         } else {
             str = game.winner + " wins!!!";
-        }                                                              
-        double l = (double) str.length() / 9;    //umieszczenie napisu na środku XDD
-        g.drawString(str, BOARDSIZE / 2 - (int) (l * FIELDSIZE), FIELDSIZE / 2);
+        }
+        double l = g.getFontMetrics().stringWidth(str);
+        g.drawString(str, BOARDSIZE / 2 - (int) (l / 2), FIELDSIZE / 2);
     }
 
     private void paintCheckersBoard(Graphics g) {
@@ -162,9 +191,9 @@ public class Board extends javax.swing.JComponent {
             }
         }
         if (inDrag) {               //jeżeli pion jest unoszony to wskaż pola, na które można go postawić
-            if ((game.isAnyCapturePossible(dragged.getCheckertype())) == false) {    //jeżeli drużyna może wykonać bicia
+            if ((!game.isAnyCapturePossible(dragged.getCheckertype()))) {    //jeżeli drużyna może wykonać bicia
                 for (int i = 1; i < 9; i++) {                                   //to nie możę wykonać normalnego ruchu
-                    for (int j = 1; j < 9; j++) {
+                    for (int j = ((i % 2 == 1) ? 2 : 1); j < 9; j++) {
                         if (game.isMovePossible(dragged, i, j)) {                    //bicia nie ma, więc wskaż
                             g.setColor(Color.MAGENTA);                          //pola, na które można wykonać zwykły ruch
                             g.fillRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
@@ -174,15 +203,15 @@ public class Board extends javax.swing.JComponent {
                     }
                 }
             } else {
-                printCaptures(dragged, g);          //wskaż bicia, któe można wykonać przez piona dragged
+                paintCaptures(dragged, g);          //wskaż bicia, któe można wykonać przez piona dragged
             }
         }
     }
-    
-    private void printCaptures(Checker c, Graphics g) {     //zamaluj pola na których można wykonać bicie przez piona c
-        if (prevCapturing == null || prevCapturing == dragged) {
+
+    private void paintCaptures(Checker c, Graphics g) {     //zamaluj pola na których można wykonać bicie przez piona c
+        if (game.prevMove == null || game.prevMove.checker == dragged || game.prevMove.checker.getCheckertype() != dragged.getCheckertype()) {
             for (int i = 1; i < 9; i++) {
-                for (int j = 1; j < 9; j++) {
+                for (int j = ((i % 2 == 1) ? 2 : 1); j < 9; j++) {
                     if (game.isCapturePossible(c, i, j) != null) {
                         g.setColor(Color.MAGENTA);
                         g.fillRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
@@ -193,27 +222,12 @@ public class Board extends javax.swing.JComponent {
             }
         }
     }
-    
-    /*public static void playSound(final String name) {
-        try {
-            if (clip != null) {
-                clip.stop();
-            }
-            clip = null;
-            clip = AudioSystem.getClip();
-            AudioInputStream inputStream = AudioSystem.getAudioInputStream(
-                    new File(name));
-            clip.open(inputStream);
-            clip.start();
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-        }
-    }*/
 
     public static int whichRow(int y) {
         return ((int) (1 + y + FIELDSIZE / 2) / FIELDSIZE);  //1 po to, aby uniknąć umiejscowienia piona
     }                                          //w złym miejscu w przypadku
-                                              //nieparzystego wymiaru FieldSize
+    //nieparzystego wymiaru FieldSize
+
     public static int whichColumn(int x) {
         return ((int) (1 + x + FIELDSIZE / 2) / FIELDSIZE);
     }
@@ -226,6 +240,16 @@ public class Board extends javax.swing.JComponent {
         for (int i = 0; i < game.n; i++) {
             game.checkers[i].adjust();
         }
+    }
+
+    public void undo() {            //cofnij ruch
+        if (game.undo()) {
+            if (!(game instanceof AIGame))
+                whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
+            else
+                whoseTurn = game.team2;
+        }
+        repaint();
     }
 
 }

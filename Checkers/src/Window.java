@@ -10,12 +10,12 @@
  */
 public class Window extends javax.swing.JPanel {
 
-    private CheckerType t1 = CheckerType.RED;
-    private CheckerType t2 = CheckerType.WHITE;
+    private CheckerType t1;
+    private CheckerType t2;
+    private boolean ifAi;
     private final WindowFrame wf;
     private final CheckersGUI cgui;
 
-    //public boolean play;
     /**
      * Creates new form Window
      */
@@ -237,9 +237,11 @@ public class Window extends javax.swing.JPanel {
         if (t1 == null || t2 == null) {
             jLabel1.setText("You have to choose checkers' colors");
         } else if (t1 == t2) {
-            jLabel1.setText("You chose the same checkers' colors");   
+            jLabel1.setText("You chose the same checkers' colors");
+        } else if (!(jToggleButton7.isSelected() || jToggleButton8.isSelected())) {
+            jLabel1.setText("You have to choose game type");
         } else {
-            new CheckersGUI(t1, t2);                       //UĹĽytkownik wybraĹ‚ poprawne ustawienia gry
+            new CheckersGUI((ifAi) ? new AIGame(t1, t2) : new Game(t1, t2)); //UĹĽytkownik wybraĹ‚ poprawne ustawienia gry
             wf.setVisible(false);                            //Zamykamy okno ustawieĹ„ i rozpoczynamy grÄ™
             if (cgui != null) {                                //JeĹĽeli nie jest to pierwsza rozpoczÄ™ta gra
                 cgui.setVisible(false);                      //NaleĹĽy zamknÄ…Ä‡ poprzedniÄ… grÄ™
@@ -249,54 +251,56 @@ public class Window extends javax.swing.JPanel {
 
     private void jToggleButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton1ActionPerformed
         jToggleButton2.setSelected(false);        // TODO add your handling code here:
-        jToggleButton3.setSelected(false); 
+        jToggleButton3.setSelected(false);
         jLabel1.setText("");
-        t1 = CheckerType.BLACK;               
+        t1 = (jToggleButton1.isSelected()) ? CheckerType.BLACK : null;
     }//GEN-LAST:event_jToggleButton1ActionPerformed
 
     private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
         jToggleButton1.setSelected(false);        // TODO add your handling code here:
-        jToggleButton3.setSelected(false); 
+        jToggleButton3.setSelected(false);
         jLabel1.setText("");
-        t1 = CheckerType.RED;               
+        t1 = (jToggleButton2.isSelected()) ? CheckerType.RED : null;
     }//GEN-LAST:event_jToggleButton2ActionPerformed
 
     private void jToggleButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton4ActionPerformed
         jToggleButton5.setSelected(false);        // TODO add your handling code here:
-        jToggleButton6.setSelected(false); 
+        jToggleButton6.setSelected(false);
         jLabel1.setText("");
-        t2 = CheckerType.BLACK;               
+        t2 = (jToggleButton4.isSelected()) ? CheckerType.BLACK : null;
     }//GEN-LAST:event_jToggleButton4ActionPerformed
 
     private void jToggleButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton5ActionPerformed
         jToggleButton4.setSelected(false);        // TODO add your handling code here:
-        jToggleButton6.setSelected(false); 
+        jToggleButton6.setSelected(false);
         jLabel1.setText("");
-        t2 = CheckerType.RED;               
+        t2 = (jToggleButton5.isSelected()) ? CheckerType.RED : null;
     }//GEN-LAST:event_jToggleButton5ActionPerformed
 
     private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton7ActionPerformed
         jToggleButton8.setSelected(false);// TODO add your handling code here:
-        jLabel1.setText("TODO");
+        jLabel1.setText("");
+        ifAi = false;
     }//GEN-LAST:event_jToggleButton7ActionPerformed
 
     private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
         jToggleButton7.setSelected(false);// TODO add your handling code here:
-        jLabel1.setText("TODO");
+        jLabel1.setText("");
+        ifAi = true;
     }//GEN-LAST:event_jToggleButton8ActionPerformed
 
     private void jToggleButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton6ActionPerformed
         jToggleButton4.setSelected(false);        // TODO add your handling code here:
         jToggleButton5.setSelected(false);
         jLabel1.setText("");
-        t2 = CheckerType.WHITE;
+        t2 = (jToggleButton6.isSelected()) ? CheckerType.WHITE : null;
     }//GEN-LAST:event_jToggleButton6ActionPerformed
 
     private void jToggleButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton3ActionPerformed
         jToggleButton1.setSelected(false);        // TODO add your handling code here:
         jToggleButton2.setSelected(false);
         jLabel1.setText("");
-        t1 = CheckerType.WHITE;
+        t1 = (jToggleButton3.isSelected()) ? CheckerType.WHITE : null;
     }//GEN-LAST:event_jToggleButton3ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -16,9 +16,9 @@ public class Game {
     public Checker[] checkers;
     public boolean inGame;
     public int n;
-
+    public Move prevMove;  //zapamiętuje ostatnią sekwencję ruchów jednego gracza w przypadku
+                            //player vs player; oraz sekwencje ruchów gracza oraz komputera w przypadku player vs pc
     public Game(CheckerType team1, CheckerType team2) {
-        super();
         this.team1 = team1;
         this.team2 = team2;
         checkers = new Checker[24];
@@ -35,6 +35,13 @@ public class Game {
                 }
             }
         }
+        /*addChecker(new Checker(2, 3, team2));
+        addChecker(new Checker(4, 3, team2));
+        addChecker(new Checker(4, 7, team2));
+        addChecker(new Checker(6, 3, team2));
+        addChecker(new Checker(6, 5, team2));
+        addChecker(new Checker(7, 4, team1));*/
+        prevMove = null;
     }
 
     public void addChecker(Checker c) {
@@ -49,7 +56,7 @@ public class Game {
         }
         checkers[n++] = c;
     }
-    
+
     public void remChecker(Checker c) {
         for (int i = 0; i < n; i++) {
             if (checkers[i] == c) {
@@ -72,7 +79,7 @@ public class Game {
             CheckersGUI.playSound("win.wav");
         }
     }
-    
+        
     public Checker isItOccupied(int row, int col) {     //sprawdź czy (row, col) jest wolne
         for (int i = 0; i < n; i++) {
             if (row == checkers[i].i && col == checkers[i].j) {
@@ -81,12 +88,12 @@ public class Game {
         }
         return null;
     }
-    
+
     public boolean isMovePossible(Checker c, int i, int j) {
         if (i < 1 || i > 8 || j < 1 || j > 8) {     //wsp. poza planszą
             return false;
         }
-        if (c.isKing == false) {        //zwykłry pion - ruchy tylko do przodu o jeden po przekątnych
+        if (!c.isKing) {        //zwykłry pion - ruchy tylko do przodu o jeden po przekątnych
             if (c.getCheckertype() == team1 && (i != c.i + 1 || (j != c.j - 1 && j != c.j + 1))) {
                 return false;
             }
@@ -106,8 +113,7 @@ public class Game {
                     col += 1;
                 }
                 return isItOccupied(i, j) == null;      //jeżeli (i, j) wolne to ruch dozwolony
-            }
-            if ((c.i - i == j - c.j) && c.i - i > 0) {  //ruch w kierunku płn-wsch
+            } else if ((c.i - i == j - c.j) && c.i - i > 0) {  //ruch w kierunku płn-wsch
                 int row = i + 1;
                 int col = j - 1;
                 Checker tmp;
@@ -119,8 +125,7 @@ public class Game {
                     col -= 1;
                 }
                 return isItOccupied(i, j) == null;
-            }
-            if ((c.i - i == j - c.j) && c.i - i < 0) {  //ruch w kierunku płd-zach
+            } else if ((c.i - i == j - c.j) && c.i - i < 0) {  //ruch w kierunku płd-zach
                 int row = i - 1;
                 int col = j + 1;
                 Checker tmp;
@@ -132,8 +137,7 @@ public class Game {
                     col += 1;
                 }
                 return isItOccupied(i, j) == null;
-            }
-            if ((c.i - i == c.j - j) && c.i - i < 0) {  //ruch w kierunku płd-wsch
+            } else if ((c.i - i == c.j - j) && c.i - i < 0) {  //ruch w kierunku płd-wsch
                 int row = i - 1;
                 int col = j - 1;
                 Checker tmp;
@@ -152,16 +156,115 @@ public class Game {
         return isItOccupied(i, j) == null;  //sprawdź czy pole na które chce się ruszyć
     }                                       //zwykł pion jest wolne
 
-    public boolean isAnyCapturePossible(CheckerType t) {
-        Checker x;
-        for (int i = 0; i < n; i++) {       //sprawdź czy jakiekolwiek bicie jest możliwe
-            if (t == checkers[i].getCheckertype()) {        //przez daną drużynę
-                if (isCapturesPossible(checkers[i])) {
-                    return true;
+    public Move isCapturePossible(Checker c, int i, int j) {
+        Checker x = null;
+        if (i < 1 || i > 8 || j < 1 || j > 8 || isItOccupied(i, j) != null) {
+            return null;
+        }
+        if (!c.isKing) {        //sprawdź czy bicie pionem jest możliwe w któymś kierunku
+            if (c.i - i == 2) {
+                if (c.j - j == 2) {
+                    if ((x = isItOccupied(i + 1, j + 1)) != null && x.getCheckertype() != c.getCheckertype()) {
+                        return new Move(c, i, j, x);
+                    }
+                }
+                if (c.j - j == -2) {
+                    if ((x = isItOccupied(i + 1, j - 1)) != null && x.getCheckertype() != c.getCheckertype()) {
+                        return new Move(c, i, j, x);
+                    }
                 }
             }
+            if (c.i - i == -2) {
+                if (c.j - j == 2) {
+                    if ((x = isItOccupied(i - 1, j + 1)) != null && x.getCheckertype() != c.getCheckertype()) {
+                        return new Move(c, i, j, x);
+                    }
+                }
+                if (c.j - j == -2) {
+                    if ((x = isItOccupied(i - 1, j - 1)) != null && x.getCheckertype() != c.getCheckertype()) {
+                        return new Move(c, i, j, x);
+                    }
+                }
+            }
+        } else {            //sprawdź czy bicie damką jest możliwe w któym z kierunków
+            if ((c.i - i == c.j - j) && c.i - i > 0) {
+                int row = i + 1;
+                int col = j + 1;
+                Checker tmp;
+                while (row < c.i && col < c.j) {
+                    if ((tmp = isItOccupied(row, col)) != null) {
+                        if (tmp.getCheckertype() == c.getCheckertype()) {
+                            return null;        //nie można przeskoczyć przez piona swojej drużyny
+                        } else if (x == null) {
+                            x = tmp;
+                        } else {
+                            return null;        //nie można przeskoczyć przez więcej niż 1 pion
+                        }
+                    }
+                    row += 1;
+                    col += 1;
+                }
+            } else if ((c.i - i == j - c.j) && c.i - i > 0) {
+                int row = i + 1;
+                int col = j - 1;
+                Checker tmp;
+                while (row < c.i && col > c.j) {
+                    if ((tmp = isItOccupied(row, col)) != null) {
+                        if (tmp.getCheckertype() == c.getCheckertype()) {
+                            return null;
+                        } else if (x == null) {
+                            x = tmp;
+                        } else {
+                            return null;
+                        }
+                    }
+                    row += 1;
+                    col -= 1;
+                }
+            } else if ((c.i - i == j - c.j) && c.i - i < 0) {
+                int row = i - 1;
+                int col = j + 1;
+                Checker tmp;
+                while (row > c.i && col < c.j) {
+                    if ((tmp = isItOccupied(row, col)) != null) {
+                        if (tmp.getCheckertype() == c.getCheckertype()) {
+                            return null;
+                        } else if (x == null) {
+                            x = tmp;
+                        } else {
+                            return null;
+                        }
+                    }
+                    row -= 1;
+                    col += 1;
+                }
+            } else if ((c.i - i == c.j - j) && c.i - i < 0) {
+                int row = i - 1;
+                int col = j - 1;
+                Checker tmp;
+                while (row > c.i && col > c.j) {
+                    if ((tmp = isItOccupied(row, col)) != null) {
+                        if (tmp.getCheckertype() == c.getCheckertype()) {
+                            return null;
+                        } else if (x == null) {
+                            x = tmp;
+                        } else {
+                            return null;
+                        }
+                    }
+                    row -= 1;
+                    col -= 1;
+                }
+            }
+            if (x == null)
+                return null;
+            Move m = new Move(c, i, j, x);
+            if (prevMove != null && (prevMove.checker.getCheckertype() == m.checker.getCheckertype() && m.direction == -prevMove.direction)) {
+                return null;
+            }
+            return m;
         }
-        return false;
+        return null;
     }
 
     public void isAnyMovePossible(CheckerType t) {
@@ -169,7 +272,7 @@ public class Game {
             if (t == checkers[i].getCheckertype()) {
                 if (checkers[i].isKing) {
                     for (int row = 1; row < 9; row++) {
-                        for (int col = 1; col < 9; col++) {
+                        for (int col = ((row % 2 == 1) ? 2 : 1); col < 9; col++) {
                             if (isMovePossible(checkers[i], row, col));
                             return;
                         }
@@ -200,129 +303,30 @@ public class Game {
         }
     }
 
-    public Checker isCapturePossible(Checker c, int i, int j) {
-        Checker x = null;
-        if (i < 1 || i > 8 || j < 1 || j > 8 || isItOccupied(i, j) != null) {
-            return null;
-        }
-        if (c.isKing == false) {        //sprawdź czy bicie pionem jest możliwe w któymś kierunku
-            if (c.i - i == 2) {
-                if (c.j - j == 2) {
-                    if ((x = isItOccupied(i + 1, j + 1)) != null && x.getCheckertype() != c.getCheckertype()) {
-                        return x;
-                    }
+    public boolean isAnyCapturePossible(CheckerType t) {
+        Checker x;
+        for (int i = 0; i < n; i++) {       //sprawdź czy jakiekolwiek bicie jest możliwe
+            if (t == checkers[i].getCheckertype()) {        //przez daną drużynę
+                if (isCapturesPossible(checkers[i])) {
+                    return true;
                 }
-                if (c.j - j == -2) {
-                    if ((x = isItOccupied(i + 1, j - 1)) != null && x.getCheckertype() != c.getCheckertype()) {
-                        return x;
-                    }
-                }
-            }
-            if (c.i - i == -2) {
-                if (c.j - j == 2) {
-                    if ((x = isItOccupied(i - 1, j + 1)) != null && x.getCheckertype() != c.getCheckertype()) {
-                        return x;
-                    }
-                }
-                if (c.j - j == -2) {
-                    if ((x = isItOccupied(i - 1, j - 1)) != null && x.getCheckertype() != c.getCheckertype()) {
-                        return x;
-                    }
-                }
-            }
-        } else {            //sprawdź czy bicie damką jest możliwe w któym z kierunków
-            if ((c.i - i == c.j - j) && c.i - i > 0) {
-                int row = i + 1;
-                int col = j + 1;
-                Checker tmp;
-                while (row < c.i && col < c.j) {
-                    if ((tmp = isItOccupied(row, col)) != null) {
-                        if (tmp.getCheckertype() == c.getCheckertype()) {
-                            return null;        //nie można przeskoczyć przez piona swojej drużyny
-                        } else if (x == null) {
-                            x = tmp;
-                        } else {
-                            return null;        //nie można przeskoczyć przez więcej niż 1 pion
-                        }
-                    }
-                    row += 1;
-                    col += 1;
-                }
-                return x;
-            }
-            if ((c.i - i == j - c.j) && c.i - i > 0) {
-                int row = i + 1;
-                int col = j - 1;
-                Checker tmp;
-                while (row < c.i && col > c.j) {
-                    if ((tmp = isItOccupied(row, col)) != null) {
-                        if (tmp.getCheckertype() == c.getCheckertype()) {
-                            return null;
-                        } else if (x == null) {
-                            x = tmp;
-                        } else {
-                            return null;
-                        }
-                    }
-                    row += 1;
-                    col -= 1;
-                }
-                return x;
-            }
-            if ((c.i - i == j - c.j) && c.i - i < 0) {
-                int row = i - 1;
-                int col = j + 1;
-                Checker tmp;
-                while (row > c.i && col < c.j) {
-                    if ((tmp = isItOccupied(row, col)) != null) {
-                        if (tmp.getCheckertype() == c.getCheckertype()) {
-                            return null;
-                        } else if (x == null) {
-                            x = tmp;
-                        } else {
-                            return null;
-                        }
-                    }
-                    row -= 1;
-                    col += 1;
-                }
-                return x;
-            }
-            if ((c.i - i == c.j - j) && c.i - i < 0) {
-                int row = i - 1;
-                int col = j - 1;
-                Checker tmp;
-                while (row > c.i && col > c.j) {
-                    if ((tmp = isItOccupied(row, col)) != null) {
-                        if (tmp.getCheckertype() == c.getCheckertype()) {
-                            return null;
-                        } else if (x == null) {
-                            x = tmp;
-                        } else {
-                            return null;
-                        }
-                    }
-                    row -= 1;
-                    col -= 1;
-                }
-                return x;
             }
         }
-        return null;
+        return false;
     }
 
     public boolean isCapturesPossible(Checker c) {
-        if (c.isKing == true) {
+        if (c.isKing) {
             for (int i = 1; i < 9; i++) {       //srpawdź czy bicie damką jest możliwe
-                for (int j = 1; j < 9; j++) {   //dla każdeo pola
+                for (int j = ((i % 2 == 1) ? 2 : 1); j < 9; j++) {   //dla każdeo pola
                     if (isCapturePossible(c, i, j) != null) {
                         return true;
                     }
                 }
             }
             return false;
-        }                   //sprawdź czy bicie pinem jest możliwe
-        //dla standardowch pól (oddalonych o 2 i po przekątnych)
+        }                   //sprawdź czy bicie pionem jest możliwe
+                            //dla standardowch pól (oddalonych o 2 i po przekątnych)
         if (isCapturePossible(c, c.i - 2, c.j - 2) != null) {
             return true;
         }
@@ -339,4 +343,18 @@ public class Game {
         return false;
     }
 
+    public boolean undo() {         //cofnij ruch bądź sekwencję ruchów
+        if (prevMove == null)       //zwróć false, gdy nie jest zapamiętany żaden ruch
+            return false;
+        while (prevMove != null) {
+            if (prevMove.removed != null)
+                addChecker(prevMove.removed);
+            prevMove.checker.isKing = prevMove.wasKing;
+            prevMove.checker.i = prevMove.prev_i;
+            prevMove.checker.j = prevMove.prev_j;
+            prevMove.checker.adjust();
+            prevMove = prevMove.prev;       //sprawdź czy jest zapamiętany więcej niż jedne ruch
+        }
+        return true;
+    }
 }

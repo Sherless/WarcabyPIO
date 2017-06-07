@@ -20,11 +20,11 @@ public class Checker {
     public int y;           //współrzędne y
     private final CheckerType checkertype;
     public boolean isKing;  //czy damka?
-    
+
     public CheckerType getCheckertype() {
         return checkertype;
     }
-    
+
     public Checker(int i, int j, CheckerType ctype) {
         this.i = i;
         this.j = j;
@@ -48,12 +48,13 @@ public class Checker {
         if (isKing == true) {
             try {
                 File pathToFile = null;
-                if (checkertype == CheckerType.BLACK)
+                if (checkertype == CheckerType.BLACK) {
                     pathToFile = new File("black.jpeg");
-                else if (checkertype == CheckerType.RED)    
+                } else if (checkertype == CheckerType.RED) {
                     pathToFile = new File("red.jpeg");
-                else if (checkertype == CheckerType.WHITE)
-                    pathToFile = new File ("white.jpg");
+                } else if (checkertype == CheckerType.WHITE) {
+                    pathToFile = new File("white.jpg");
+                }
                 Image image = ImageIO.read(pathToFile);
                 g.drawImage(image, x - CHECKERSIZE / 4, y - CHECKERSIZE / 4, CHECKERSIZE / 2, CHECKERSIZE / 2, null);
             } catch (IOException ex) {
@@ -63,13 +64,18 @@ public class Checker {
     }
 
     boolean contains(int x, int y) {        //sprawdza czy punkt (x, y) należy do piona
-        int distance = (this.x - x) * (this.x - x) + (this.y - y) * (this.y - y);        
-        return distance < CHECKERSIZE * CHECKERSIZE / 4;                
+        int distance = (this.x - x) * (this.x - x) + (this.y - y) * (this.y - y);
+        return distance < CHECKERSIZE * CHECKERSIZE / 4;
     }
-    
-    public void adjust(){
+
+    public void adjust() {
         x = (j - 1) * FIELDSIZE + FIELDSIZE / 2;
         y = (i - 1) * FIELDSIZE + FIELDSIZE / 2;
+    }
+
+    @Override
+    public String toString() {
+        return "Pionek: i = " + i + " j = " + j;
     }
 
 }
