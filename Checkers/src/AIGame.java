@@ -170,6 +170,8 @@ public class AIGame extends Game {
     }
 
     public boolean isThreatened(Checker c) {
+        Move tmp = prevMove;
+        prevMove = null;
         if (isAnyCapturePossible(team2)) {
             for (int i = 0; i < n; i++) {
                 if (team2 == checkers[i].getCheckertype() && isCapturesPossible(checkers[i])) {
@@ -177,6 +179,7 @@ public class AIGame extends Game {
                         for (int col = ((row % 2 == 1) ? 2 : 1); col < 9; col++) {
                             Move m = isCapturePossible(checkers[i], row, col);
                             if (m != null && m.removed == c) {
+                                prevMove = tmp;
                                 return true;
                             }
                         }
@@ -184,6 +187,7 @@ public class AIGame extends Game {
                 }
             }
         }
+        prevMove = tmp;
         return false;
     }
 

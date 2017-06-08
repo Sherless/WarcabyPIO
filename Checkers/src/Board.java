@@ -76,14 +76,14 @@ public class Board extends javax.swing.JComponent {
                         dragged.i = whichRow(dragged.y);                                        //przesunięcie piona
                         dragged.j = whichColumn(dragged.x);
                         if ((dragged.getCheckertype() == game.team1 && dragged.i == 8)
-                         || (dragged.getCheckertype() == game.team2 && dragged.i == 1)) {
+                                || (dragged.getCheckertype() == game.team2 && dragged.i == 1)) {
                             dragged.isKing = true;                                      //jeżeli przesunięto na przeciwległy
                         }                                                               //koniec planszy tzn. że pion staje się damką
                         whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
                         game.isAnyMovePossible(whoseTurn);  //sprawdź czy drużyna ma możliwość jakiekolwiek ruchu
                     } else {
                         if (CheckersGUI.sound && (whichRow(dragged.y) != dragged.i || whichColumn(dragged.x) != dragged.j)) {
-                            Toolkit.getDefaultToolkit().beep();             
+                            Toolkit.getDefaultToolkit().beep();
                         }
                         dragged.x = prev_x;
                         dragged.y = prev_y;
@@ -100,7 +100,7 @@ public class Board extends javax.swing.JComponent {
                     }                               //i zapamiętać aktualne w prevMove
                     if (!game.isCapturesPossible(dragged)) {                   //sprawdź czy jest konieczność dalszego bicia przez piona dragged
                         if ((dragged.getCheckertype() == game.team1 && dragged.i == 8)
-                         || (dragged.getCheckertype() == game.team2 && dragged.i == 1)) {
+                                || (dragged.getCheckertype() == game.team2 && dragged.i == 1)) {
                             dragged.isKing = true;
                         }
                         whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
@@ -203,21 +203,19 @@ public class Board extends javax.swing.JComponent {
                     }
                 }
             } else {
-                paintCaptures(dragged, g);          //wskaż bicia, któe można wykonać przez piona dragged
+                paintCaptures(g);          //wskaż bicia, któe można wykonać przez piona dragged
             }
         }
     }
 
-    private void paintCaptures(Checker c, Graphics g) {     //zamaluj pola na których można wykonać bicie przez piona c
-        if (game.prevMove == null || game.prevMove.checker == dragged || game.prevMove.checker.getCheckertype() != dragged.getCheckertype()) {
-            for (int i = 1; i < 9; i++) {
-                for (int j = ((i % 2 == 1) ? 2 : 1); j < 9; j++) {
-                    if (game.isCapturePossible(c, i, j) != null) {
-                        g.setColor(Color.MAGENTA);
-                        g.fillRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
-                        g.setColor(Color.BLACK);
-                        g.drawRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
-                    }
+    private void paintCaptures(Graphics g) {     //zamaluj pola na których można wykonać bicie przez piona c
+        for (int i = 1; i < 9; i++) {
+            for (int j = ((i % 2 == 1) ? 2 : 1); j < 9; j++) {
+                if (game.isCapturePossible(dragged, i, j) != null) {
+                    g.setColor(Color.MAGENTA);
+                    g.fillRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
+                    g.setColor(Color.BLACK);
+                    g.drawRect((j - 1) * FIELDSIZE, (i - 1) * FIELDSIZE, FIELDSIZE, FIELDSIZE);
                 }
             }
         }
@@ -243,11 +241,23 @@ public class Board extends javax.swing.JComponent {
     }
 
     public void undo() {            //cofnij ruch
-        if (game.undo()) {
-            if (!(game instanceof AIGame))
-                whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
-            else
-                whoseTurn = game.team2;
+        if (game.prevMove == null) {
+            return;             //żaden ruch nie jest zapamiętany 
+        }
+        if (game instanceof AIGame) {
+            /*prevMove w przypadku gry AI zapamiętuje sekwencje ruchów komputera
+            oraz użytkownika*/
+            if (game.prevMove.prev == null && game.prevMove.checker.getCheckertype() == game.team1) {
+                whoseTurn = game.team1; //to znaczy, że zapamiętany jest 
+            } else {                    //ruch AI tuż po rozpoczęciu gry (szczególny przypadek)
+                whoseTurn = game.team2; //zapamiętana jest sekwencja ruchów AI
+            }                           //oraz gracza bądź użytkownik chce cofnąć początkowe bicia
+            //z sekwencji bić
+            game.undo(whoseTurn);
+        } else if (game.undo(whoseTurn)) {
+            /*game.undo zwraca true jeśli zapamiętana jest sekwencja
+            ruchów poprzedniego gracza. Należy w takim wypadku zmienić whoseTurn*/
+            whoseTurn = (whoseTurn == game.team1) ? game.team2 : game.team1;
         }
         repaint();
     }

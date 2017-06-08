@@ -17,7 +17,8 @@ public class Game {
     public boolean inGame;
     public int n;
     public Move prevMove;  //zapamiętuje ostatnią sekwencję ruchów jednego gracza w przypadku
-                            //player vs player; oraz sekwencje ruchów gracza oraz komputera w przypadku player vs pc
+    //player vs player; oraz sekwencje ruchów gracza oraz komputera w przypadku player vs pc
+
     public Game(CheckerType team1, CheckerType team2) {
         this.team1 = team1;
         this.team2 = team2;
@@ -35,12 +36,6 @@ public class Game {
                 }
             }
         }
-        /*addChecker(new Checker(2, 3, team2));
-        addChecker(new Checker(4, 3, team2));
-        addChecker(new Checker(4, 7, team2));
-        addChecker(new Checker(6, 3, team2));
-        addChecker(new Checker(6, 5, team2));
-        addChecker(new Checker(7, 4, team1));*/
         prevMove = null;
     }
 
@@ -79,7 +74,7 @@ public class Game {
             CheckersGUI.playSound("win.wav");
         }
     }
-        
+
     public Checker isItOccupied(int row, int col) {     //sprawdź czy (row, col) jest wolne
         for (int i = 0; i < n; i++) {
             if (row == checkers[i].i && col == checkers[i].j) {
@@ -159,6 +154,9 @@ public class Game {
     public Move isCapturePossible(Checker c, int i, int j) {
         Checker x = null;
         if (i < 1 || i > 8 || j < 1 || j > 8 || isItOccupied(i, j) != null) {
+            return null;
+        }
+        if (prevMove != null && (prevMove.checker.getCheckertype() == c.getCheckertype() && prevMove.checker != c)) {
             return null;
         }
         if (!c.isKing) {        //sprawdź czy bicie pionem jest możliwe w któymś kierunku
@@ -256,10 +254,11 @@ public class Game {
                     col -= 1;
                 }
             }
-            if (x == null)
+            if (x == null) {
                 return null;
+            }
             Move m = new Move(c, i, j, x);
-            if (prevMove != null && (prevMove.checker.getCheckertype() == m.checker.getCheckertype() && m.direction == -prevMove.direction)) {
+            if (prevMove != null && (prevMove.checker.getCheckertype() == c.getCheckertype() && m.direction == -prevMove.direction)) {
                 return null;
             }
             return m;
@@ -326,7 +325,7 @@ public class Game {
             }
             return false;
         }                   //sprawdź czy bicie pionem jest możliwe
-                            //dla standardowch pól (oddalonych o 2 i po przekątnych)
+        //dla standardowch pól (oddalonych o 2 i po przekątnych)
         if (isCapturePossible(c, c.i - 2, c.j - 2) != null) {
             return true;
         }
@@ -343,18 +342,22 @@ public class Game {
         return false;
     }
 
-    public boolean undo() {         //cofnij ruch bądź sekwencję ruchów
-        if (prevMove == null)       //zwróć false, gdy nie jest zapamiętany żaden ruch
-            return false;
+    public boolean undo(CheckerType whoseTurn) {         //cofnij ruch bądź sekwencję ruchów
+        boolean differentTeams = false;
         while (prevMove != null) {
-            if (prevMove.removed != null)
-                addChecker(prevMove.removed);
+            if (whoseTurn != prevMove.checker.getCheckertype()) {
+                differentTeams = true;              //zapamiętany jest ruch gracza, który stracił
+            }
+            if (prevMove.removed != null) //już swoją kolejkę. To znaczy, że 
+            {
+                addChecker(prevMove.removed);       //należy mu ją przywrócić
+            }
             prevMove.checker.isKing = prevMove.wasKing;
             prevMove.checker.i = prevMove.prev_i;
             prevMove.checker.j = prevMove.prev_j;
             prevMove.checker.adjust();
             prevMove = prevMove.prev;       //sprawdź czy jest zapamiętany więcej niż jedne ruch
         }
-        return true;
+        return differentTeams;              //true jeżeli należy zmienić whoseTurn
     }
 }
